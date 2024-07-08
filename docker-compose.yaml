@@ -1,0 +1,56 @@
+version: '3'
+services:
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:latest
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "9001:9001"
+    volumes:
+      - ./MQTT/broker/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./MQTT/broker/config/password_file.txt:/mosquitto/config/password_file.txt
+      - ./certs_keys:/mosquitto/config/certs_keys
+      - ./MQTT/broker/data:/mosquitto/data
+      - ./MQTT/broker/storage:/mosquitto/storage #specific for HTTP
+      - ./MQTT/broker/log:/mosquitto/log
+    security_opt:
+      - no-new-privileges:true
+  ftp:
+    container_name: ftp
+    image: delfer/alpine-ftp-server:latest
+    restart: always
+    ports:
+     - 21:21
+     - 21000-21010:21000-21010
+    environment:
+      - USERS=user1|123456|/storage
+      - TLS_CERT=/certs_keys/server.crt
+      - TLS_KEY=/certs_keys/server.key
+    volumes:
+      - ./FTP/server:/storage
+      - ./certs_keys:/certs_keys
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    environment:
+      TZ: 'Asia/Ho_Chi_Minh'
+      WEBPASSWORD: '123456'
+    # Volumes store your data between container upgrades
+    volumes:
+      - './DNS/etc-pihole:/etc/pihole'
+      - './DNS/etc-dnsmasq-d:/etc/dnsmasq.d'
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    #cap_add:
+    #  - NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
+    restart: always
