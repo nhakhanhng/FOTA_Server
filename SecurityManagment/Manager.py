@@ -41,11 +41,13 @@ def GetCurrentSWName(SWType):
     for SW in SWs:
         if SW.find(SWType) != -1:
             return SW
+    return SWType + '_v0'
         
 def DeleteSW(SWname):
     SWpath = os.path.join('../FTP/server/SW',SWname)
     print("Path: ",SWpath)
-    os.remove(SWpath)
+    if os.path.exists(SWpath):
+        os.remove(SWpath)
 
 def MQTT_Publish_SW_Info(MQTTClient,SWname):
     match = re.match(r"(.*)(_v(\d+))(\.py)?$",SWname)
@@ -58,7 +60,7 @@ def MQTT_Publish_SW_Info(MQTTClient,SWname):
 
 def SW_Proccess_Thread(MQTTClient,SWname):
     try:
-        Unverified_SWpath = os.path.join('../FTP/server/NewSW',SWname)
+        Unverified_SWpath = os.path.join('../FTP/server/Unverified_SW',SWname)
         with open(Unverified_SWpath,'rb') as file:
             Unverified_SW = file.read()
         Verified_SW =  Security.Verify_Decrypt(Unverified_SW)
@@ -73,8 +75,9 @@ def SW_Proccess_Thread(MQTTClient,SWname):
         else:
             print("Sw verify failed!")
             MQTTClient.publish(Upload_Topic,"Fail")
-        os.remove(Unverified_SWpath)
+        # os.remove(Unverified_SWpath)
     except Exception as e:
+        MQTTClient.publish(Upload_Topic,"Fail")
         print(f'Error occured: {e}')
     
     
@@ -98,7 +101,7 @@ if __name__ == "__main__":
     MQTTClient.connect(host,port)
     print("Connecting")
     MQTTClient.subscribe(Upload_Topic,qos=2)
-    MQTTClient.publish(Upload_Topic,"Done")
+    # MQTTClient.publish(Upload_Topic,"Done")
     # Version_SW("FOTA_Master_App_v1")
     MQTTClient.loop_forever()
     
