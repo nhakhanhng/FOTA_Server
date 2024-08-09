@@ -1,6 +1,6 @@
 ./DemoSide/
 ./TestNodeJS/
-./*/node_modules/
+# ./*/node_modules/
 ./MongoDB/data/
 ./FTP/server/
 ./MQTT/broker/data/
